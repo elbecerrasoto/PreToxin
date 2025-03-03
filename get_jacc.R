@@ -9,7 +9,6 @@ METHOD <- "jaccard"
 codes <- read_tsv(IN)
 codes$tax_id <- as.character(codes$tax_id)
 codes$pfams <- map(codes$arch, \(x) str_split_1(x, " "))
-# tree <- ncbi_tree(unique(codes$tax_id))
 
 all_pfams <- map(codes$arch,
                  \(x) str_split_1(
@@ -27,10 +26,13 @@ abspres_pfam <- list_matrix |>
 row.names(abspres_pfam) <- codes$pid
 colnames(abspres_pfam) <- all_pfams
 
-# jaccard <- dist(abspres_pfam,method=METHOD)
-# saveRDS(jaccard, "jaccard.RDS")
 
-jaccard <- readRDS("jaccard.RDS")
+distance_rds <- paste0(METHOD, ".RDS")
+if (file.exists(distance_rds)) {
+  jaccard <- readRDS(distance_rds)
+} else {
+  jaccard <- dist(abspres_pfam, method=METHOD)
+  saveRDS(jaccard, distance_rds)
+}
 
-jac_tib <- broom::tidy(jaccard)
-# write_tsv(jac_tib, "jaccard.tsv")
+# jac_tib <- broom::tidy(jaccard)
