@@ -3,7 +3,7 @@
 library(tidyverse)
 library(proxy)
 library(glue)
-# library(broom)
+library(broom)
 
 IN <- "PTTG_codes.tsv"
 
@@ -29,12 +29,14 @@ METHOD <- "jaccard"
 # pr_dist2simil(x) = 1 / (1 + x)
 
 
-# Read and Wrangle --------------------------------------------------------
-
-
 codes <- read_tsv(IN)
 codes$tax_id <- as.character(codes$tax_id)
 codes$pfams <- map(codes$arch, \(x) str_split_1(x, " "))
+
+
+# Remove duplicated architectures
+codes <- codes |>
+  distinct(arch, .keep_all = TRUE)
 
 
 contains_PTTG <- map_lgl(codes$pfams, \(x) PTTG %in% x)
@@ -44,9 +46,6 @@ if (!all(contains_PTTG)) {
   cat(codes$tax_id[!contains_PTTG])
   stopifnot("Protein withtout PTTG:" = all(contains_PTTG))
 }
-
-# Calculate distance ------------------------------------------------------
-
 
 all_pfams <- map(
   codes$arch,
@@ -78,7 +77,9 @@ if (file.exists(distance_rds)) {
   saveRDS(jaccard, distance_rds)
 }
 
-# jac_tib <- broom::tidy(jaccard)
+
+jac_tib <- broom::tidy(jaccard)
+write_tsv(jac_tib, "jaccard.tsv")
 
 
 # Percentages ---------------------------------------------------------------------
