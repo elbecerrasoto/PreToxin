@@ -10,14 +10,19 @@ codes <- read_tsv(IN)
 codes$tax_id <- as.character(codes$tax_id)
 codes$pfams <- map(codes$arch, \(x) str_split_1(x, " "))
 
-all_pfams <- map(codes$arch,
-                 \(x) str_split_1(
-                   x, " ")) |>
+all_pfams <- map(
+  codes$arch,
+  \(x) str_split_1(
+    x, " "
+  )
+) |>
   unlist() |>
   unique()
 
-list_matrix <- map(codes$pfams,
-                   \(x) all_pfams %in% x)
+list_matrix <- map(
+  codes$pfams,
+  \(x) all_pfams %in% x
+)
 
 abspres_pfam <- list_matrix |>
   unlist() |>
@@ -31,7 +36,7 @@ distance_rds <- paste0(METHOD, ".RDS")
 if (file.exists(distance_rds)) {
   jaccard <- readRDS(distance_rds)
 } else {
-  jaccard <- dist(abspres_pfam, method=METHOD)
+  jaccard <- dist(abspres_pfam, method = METHOD)
   saveRDS(jaccard, distance_rds)
 }
 

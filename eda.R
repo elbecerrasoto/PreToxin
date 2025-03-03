@@ -1,3 +1,3 @@
-#!/usr/bin/env Rscript 
+#!/usr/bin/env Rscript
 
 # PreToxin PF14449
