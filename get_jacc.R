@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 
 library(tidyverse)
+library(pheatmap)
 library(proxy)
 library(glue)
 library(broom)
@@ -77,9 +78,13 @@ if (file.exists(distance_rds)) {
   saveRDS(jaccard, distance_rds)
 }
 
-
 jac_tib <- broom::tidy(jaccard)
-write_tsv(jac_tib, "jaccard.tsv")
 
+distance_tsv <- "jaccard.tsv"
+if (!file.exists(distance_tsv)) {
+  write_tsv(jac_tib, "jaccard.tsv")
+}
 
-# Percentages ---------------------------------------------------------------------
+pdf("PTTG_archs.pdf")
+pheatmap(jaccard, cluster_rows = TRUE, cluster_cols = TRUE, main = "PT-TG Domain Architectures")
+dev.off()
