@@ -1,16 +1,21 @@
+TARGZ = data.tar.gz
+
+data: $(TARGZ)
+	tar -xvf $<
+
 .PHONY help:
 help:
 	less Makefile
 
-data.tar.gz: data
-	tar -czvf $@ $<
-
-data: data.tar.gz
-	tar -xvf $<
+# PHONY Avoids circular dependency
+.PHONY targz:
+targz:
+	make --no-print-directory clean
+	tar -czvf $(TARGZ) data
 
 .PHONY style:
 style:
-	Rscript -e 'styler::style_dir(".", recursive=FALSE)'
+	Rscript -e 'styler::style_dir(".")'
 
 .PHONY clean:
-	rm data.tar.gz
+	rm -f $(TARGZ)
