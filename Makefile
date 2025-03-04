@@ -2,12 +2,15 @@
 help:
 	less Makefile
 
-codes.tsv.tar.gz: codes.tsv
+data.tar.gz: data
 	tar -czvf $@ $<
 
-codes.tsv: codes.tsv.tar.gz
+data: data.tar.gz
 	tar -xvf $<
 
 .PHONY style:
 style:
 	Rscript -e 'styler::style_dir(".", recursive=FALSE)'
+
+.PHONY clean:
+	rm data.tar.gz
