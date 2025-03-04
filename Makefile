@@ -1,4 +1,11 @@
-PTTG_codes.tsv: PTTG_codes.tsv.tar.gz
+.PHONY help:
+help:
+	less Makefile
+
+codes.tsv.tar.gz: codes.tsv
+	tar -czvf $@ $<
+
+codes.tsv: codes.tsv.tar.gz
 	tar -xvf $<
 
 .PHONY style:
