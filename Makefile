@@ -1,5 +1,4 @@
 DATA = data
-PTTG = $(DATA)/pttg.tsv
 TARGZ = data.tar.gz
 
 .PHONY help:
@@ -7,11 +6,12 @@ help:
 	less Makefile
 
 .PHONY test:
-test: $(PTTG)
-	./asserts.R
+test: $(DATA)
+	Rscript asserts.R
 
-$(PTTG): $(TARGZ)
-	tar -xvf $<
+$(DATA): $(TARGZ)
+	@if [ -d "$(DATA)" ]; then echo "$(DATA) already exists, skipping extraction."; else tar -xvf $<; fi
+	@touch $@
 
 # PHONY Avoids circular dependency
 .PHONY targz:
