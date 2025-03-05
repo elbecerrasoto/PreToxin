@@ -1,12 +1,44 @@
 library(tidyverse)
 library(ggrepel)
 
+count_rank <- function(ranks, rank) {
+  Nbacs <- nrow(ranks)
+  ranks |>
+    group_by({{ rank }}) |>
+    summarize(n = n(), r = n() / Nbacs) |>
+    arrange(desc(n))
+}
 
-IN <- "BacillotaRanks.tsv"
+PTTG <- "data/pttg.tsv"
+ALL_BAC <- "data/all_bac.tsv"
 
-granks <- read_tsv(IN)
+# read ----
 
-N <- nrow(granks)
+pttg <- read_tsv(PTTG)
+all_bac <- read_tsv(ALL_BAC)
+
+taxid_ranks <- all_bac |>
+  distinct(tax_id, .keep_all = TRUE)
+
+pttg_ranks <- pttg |>
+  select(-family, -genus) |>
+  left_join(taxid_ranks, join_by(tax_id))
+
+# generate tabs ----
+
+family_all <- count_rank(all_bac, family)
+family_pttg <- count_rank(pttg_ranks, family)
+
+
+genus_all <- count_rank(pttg_ranks, order)
+genus_pttg <- count_rank(pttg_ranks, order)
+
+var_summary <- function(data, var) {
+  data %>%
+    summarise(n = n(), min = min({{ var }}), max = max({{ var }}))
+}
+
+
 
 # frequency of genomes per family that have each domain
 
