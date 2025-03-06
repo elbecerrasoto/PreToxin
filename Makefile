@@ -5,8 +5,8 @@ TARGZ = data.tar.gz
 help:
 	less Makefile
 
-.PHONY test:
-test: $(DATA)
+.PHONY check:
+check: $(DATA)
 	Rscript asserts.R
 
 $(DATA): $(TARGZ)
