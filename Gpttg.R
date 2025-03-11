@@ -3,6 +3,9 @@
 suppressPackageStartupMessages({
   library(tidyverse)
   library(glue)
+  library(pheatmap)
+  library(proxy)
+  library(broom)
 })
 
 PTTG <- "data/pttg.tsv"
@@ -10,6 +13,9 @@ REGS <- "data/regs.tsv"
 
 PTTG_id <- "PF14449"
 PTTG_code <- "㢒"
+
+METHOD <- "jaccard"
+# Available distances proxy::dist
 
 PTTG_COLS <- cols(
   pid = "c",
@@ -67,3 +73,51 @@ pttg |>
   write_tsv(glue("{RESULTS}/Gpttg.tsv"))
 
 # Calculate distances ----
+
+# Remove duplicated architectures
+pttg <- pttg |>
+  distinct(arch, .keep_all = TRUE)
+
+# Add architecture as a list
+pttg$pfams <- map(pttg$arch, \(x) str_split_1(x, ";"))
+
+all_pfams <- map(
+  pttg$arch,
+  \(x) str_split_1(
+    x, ";"
+  )
+) |>
+  unlist() |>
+  unique()
+
+list_matrix <- map(
+  pttg$pfams,
+  \(x) all_pfams %in% x
+)
+
+abspres_pfam <- list_matrix |>
+  unlist() |>
+  matrix(ncol = length(all_pfams), byrow = TRUE)
+
+row.names(abspres_pfam) <- pttg$pid
+colnames(abspres_pfam) <- all_pfams
+
+# Jaccard distance matrix
+jaccard <- proxy::dist(abspres_pfam, method = METHOD)
+# Jaccard distance tibble
+jac_tib <- broom::tidy(jaccard)
+
+# Save distance matrix
+distance_rds <- glue("{RESULTS}/{METHOD}.RDS")
+saveRDS(jaccard, distance_rds)
+
+# Save distance tibble
+distance_tsv <- glue("{RESULTS}/jaccard.tsv")
+write_tsv(jac_tib, distance_tsv)
+
+# Plot heatmap
+distance_pdf <- glue("{RESULTS}/{METHOD}.pdf")
+pheatmap(jaccard,
+  cluster_rows = TRUE, cluster_cols = TRUE, main = "PT-TG Domain Architectures",
+  show_rownames = FALSE, show_colnames = FALSE, filename = distance_pdf
+)
