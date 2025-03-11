@@ -88,16 +88,50 @@ view(GroupFreqs)
 # Existence by Architecture
 
 
-dim(pttg_ranks)
-pttg_ranks |>
-  distinct(, .keep_all = TRUE)
+library(proxy)
+intersections <- read_tsv("intersections.tsv")
+intersections
 
-view(pttg_ranks)
-
-
-pttg_ranks
+intersections$pfams <- map(intersections$intersection, \(x) str_split_1(x, " "))
 
 
+all_pfams <- intersections$pfams |>
+  unlist() |>
+  unique()
 
 
+list_matrix <- map(
+  intersections$pfams,
+  \(x) all_pfams %in% x
+)
 
+abspres_pfam <- list_matrix |>
+  unlist() |>
+  matrix(ncol = length(all_pfams), byrow = TRUE)
+
+row.names(abspres_pfam) <- codes$pid
+colnames(abspres_pfam) <- all_pfams
+
+
+abspres_pfam
+METHOD <- "jaccard"
+
+distance_rds <- paste0(METHOD, ".RDS")
+if (file.exists(distance_rds)) {
+  jaccard <- readRDS(distance_rds)
+} else {
+  jaccard <- proxy::dist(abspres_pfam, method = METHOD)
+  saveRDS(jaccard, distance_rds)
+}
+
+jac_tib <- broom::tidy(jaccard)
+
+
+distance_tsv <- "jaccard_intersect.tsv"
+if (!file.exists(distance_tsv)) {
+  write_tsv(jac_tib, distance_tsv)
+}
+
+pdf("PTTG_archs.pdf")
+pheatmap(jaccard, cluster_rows = TRUE, cluster_cols = TRUE, main = "PT-TG Domain Architectures")
+dev.off()
