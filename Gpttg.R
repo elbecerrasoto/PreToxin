@@ -2,6 +2,7 @@
 
 suppressPackageStartupMessages({
   library(tidyverse)
+  library(glue)
 })
 
 PTTG <- "data/pttg.tsv"
@@ -26,6 +27,11 @@ REGS_COLS <- cols(
   reg = "c"
 )
 
+RESULTS <- "results"
+
+if (!file.exists(RESULTS)) {
+  dir.create(RESULTS)
+}
 
 # Read data ----
 
@@ -38,28 +44,26 @@ pttg$pfams <- map(pttg$arch, \(x) str_split_1(x, ";"))
 contains_PTTG <- map_lgl(pttg$pfams, \(x) PTTG_id %in% x)
 
 if (!all(contains_PTTG)) {
-cat("Please remove the following proteins:")
-cat(pttg$tax_id[!contains_PTTG])
-stopifnot("Protein withtout PTTG:" = all(contains_PTTG))
+  cat("Please remove the following proteins:")
+  cat(pttg$tax_id[!contains_PTTG])
+  stopifnot("Protein withtout PTTG:" = all(contains_PTTG))
 }
 
 # Add groups ----
 
 groups <- vector(mode = "integer", length = nrow(pttg))
 for (idx in seq_along(regs$reg)) {
-    reg <- regs$reg[[idx]]
-    matches <- which(str_detect(pttg$arch, reg))
-    groups[matches] <- idx
+  reg <- regs$reg[[idx]]
+  matches <- which(str_detect(pttg$arch, reg))
+  groups[matches] <- idx
 }
 
 pttg$group <- as_factor(groups)
 pttg <- pttg |>
-    relocate(group, .after = pid) |>
-    arrange(group)
+  relocate(group, .after = pid) |>
+  arrange(group)
 
 pttg |>
-    write_tsv("Gpttg.tsv")
+  write_tsv(glue("{RESULTS}/Gpttg.tsv"))
 
 # Calculate distances ----
-
-
