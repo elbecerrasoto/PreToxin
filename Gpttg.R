@@ -6,10 +6,14 @@ suppressPackageStartupMessages({
   library(pheatmap)
   library(proxy)
   library(broom)
+  library(ggthemes)
+  library(magrittr)
+  library(ggrepel)
 })
 
 PTTG <- "data/pttg.tsv"
 REGS <- "data/regs.tsv"
+ALL_BAC <- "data/all_bac.tsv"
 
 PTTG_id <- "PF14449"
 PTTG_code <- "㢒"
@@ -31,6 +35,29 @@ PTTG_COLS <- cols(
 REGS_COLS <- cols(
   group = "f",
   reg = "c"
+)
+
+ALL_BAC_COLS <- cols(
+  genome = "c",
+  tax_id = "c",
+  phylum = "f",
+  class = "f",
+  order = "f",
+  family = "f",
+  genus = "f",
+  species = "f"
+)
+
+GPTTG_COLS <- cols(
+  pid = "c",
+  group = "f",
+  code = "c",
+  family = "f",
+  genus = "f",
+  tax_id = "c",
+  ndoms = "i",
+  length = "i",
+  arch = "c"
 )
 
 RESULTS <- "results"
@@ -118,6 +145,54 @@ write_tsv(jac_tib, distance_tsv)
 # Plot heatmap
 distance_pdf <- glue("{RESULTS}/{METHOD}.pdf")
 pheatmap(jaccard,
-  cluster_rows = TRUE, cluster_cols = TRUE, main = "PT-TG Domain Architectures",
+  cluster_rows = TRUE, cluster_cols = TRUE, main = "PT-TG Protein Containing Distances",
   show_rownames = FALSE, show_colnames = FALSE, filename = distance_pdf
 )
+
+# Calculate Group Frecuencies ----
+
+
+get_var_name <- function(var) {
+  deparse(substitute(var))
+}
+
+count_rank <- function(ranks, rank, source) {
+  Nbacs <- nrow(ranks)
+  ranks |>
+    group_by(.data[[rank]]) |>
+    summarize(n = n(), r = n() / Nbacs) |>
+    arrange(desc(n)) |>
+    rename(name = all_of(rank)) |>
+    mutate(
+      source = source,
+      taxon = rank
+    )
+}
+
+
+# read ----
+
+all_bac <- read_tsv(ALL_BAC, col_types = ALL_BAC_COLS)
+pttg <- read_tsv(glue("{RESULTS}/Gpttg.tsv"), col_types = GPTTG_COLS)
+
+taxid_ranks <- all_bac |>
+  distinct(tax_id, .keep_all = TRUE)
+
+pttg_ranks <- pttg |>
+  select(-family, -genus) |>
+  left_join(taxid_ranks, join_by(tax_id))
+
+# generate frecuencies ----
+
+by_group <- split(pttg_ranks, pttg_ranks$group)
+
+group_freqs_fam <- map(by_group, \(x) count_rank(x, "family", unique(x$group))) |>
+  bind_rows()
+
+group_freqs_genus <- map(by_group, \(x) count_rank(x, "genus", unique(x$group))) |>
+  bind_rows()
+
+group_freqs <- bind_rows(group_freqs_fam, group_freqs_genus)
+
+group_freqs |>
+  write_tsv(glue("{RESULTS}/group_freqs.tsv"))
